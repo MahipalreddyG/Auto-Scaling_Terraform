@@ -3,12 +3,18 @@ provider "aws" {
   secret_key = "**********************"
   region     = "us-west-2"
 }
+
+# Creating Launch configaration
+
 resource "aws_launch_configuration" "alc" {
   image_id = "ami-********"
   instance_type = "t2.micro"
   key_name="aws"
   security_groups=["launch-wizard-1"]
 }
+
+# Creating Auto-Scaling Group
+
 resource "aws_autoscaling_group" "scalegroup" {
   launch_configuration = "${aws_launch_configuration.alc.name}"
   availability_zones = ["us-west-2a", "us-west-2b", "us-west-2c"]
@@ -24,6 +30,9 @@ resource "aws_autoscaling_group" "scalegroup" {
   propagate_at_launch = true
 }
 }
+
+# Writing our own policies
+
 resource "aws_autoscaling_policy" "autopolicy" {
 name = "terraform-autoplicy"
 scaling_adjustment = 1
@@ -31,6 +40,8 @@ adjustment_type = "ChangeInCapacity"
 cooldown = 300
 autoscaling_group_name = "${aws_autoscaling_group.scalegroup.name}"
 }
+
+# creating Alarams
 
 resource "aws_cloudwatch_metric_alarm" "cpualarm" {
 alarm_name = "terraform-alarm"
@@ -48,6 +59,9 @@ AutoScalingGroupName = "${aws_autoscaling_group.scalegroup.name}"
 alarm_description = "This metric monitor EC2 instance cpu utilization"
 alarm_actions = ["${aws_autoscaling_policy.autopolicy.arn}"]
 }
+
+# security group for ELB
+
 resource "aws_security_group" "websg" {
 name = "security_group_for_web_server"
 ingress {
@@ -89,6 +103,8 @@ lifecycle {
 create_before_destroy = true
 }
 }
+
+# Creating ELB
 
 resource "aws_elb" "elb1" {
   name = "terraform-elb"
